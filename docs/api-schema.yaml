@@ -1,0 +1,207 @@
+# Claude Evaluator — frontend/backend API 계약
+#
+# 프론트엔드(frontend/src/types.ts, api.ts)가 기대하는 형태를 OpenAPI 3.1로 기술한다.
+# FastAPI 구현 후 `http://localhost:8000/openapi.json` 과 비교해 어긋남이 없는지 확인할 것.
+# 스키마 변경 시 이 파일과 frontend/src/types.ts 를 함께 갱신한다.
+
+openapi: 3.1.0
+info:
+  title: Claude Evaluator API
+  version: 0.1.0
+  description: |
+    질문을 받아 Claude Code로 답변을 생성하고, Jev로 관련성/간결성/가독성을 채점해 반환한다.
+    단일 턴: 이전 대화 문맥은 전달하지 않는다.
+
+servers:
+  - url: http://localhost:8000
+    description: 로컬 개발 (Vite dev 서버가 /api 를 여기로 프록시)
+
+# 로컬 전용 도구이므로 인증 없음
+security: []
+
+paths:
+  /api/chat:
+    post:
+      operationId: chat
+      summary: 질문 → Claude 답변 + Jev 점수
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: |
+            Claude 답변 성공. Jev 채점이 실패해도 200이며, 이때 `scores`는 null이고
+            `evaluation_error`에 원인이 담긴다. (프론트는 답변 + "평가 불가" 칩을 표시)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+              examples:
+                success:
+                  value:
+                    answer: "GIL(Global Interpreter Lock)은 ..."
+                    scores:
+                      relevance:   { label: "관련성", score: 4.6, confidence: 0.91, scale_max: 5, legend: { "1": "Off-topic", "5": "Directly answers" } }
+                      conciseness: { label: "간결성", score: 3.8, confidence: 0.72, scale_max: 5, legend: {} }
+                      readability: { label: "가독성", score: 4.2, confidence: 0.85, scale_max: 5, legend: {} }
+                    evaluation_error: null
+                evaluation_failed:
+                  value:
+                    answer: "GIL(Global Interpreter Lock)은 ..."
+                    scores: null
+                    evaluation_error: "TypeSafeAPITimeoutError: request timed out after 30s"
+        "422":
+          description: 요청 검증 실패 (빈 질문, 길이 초과 등). FastAPI 기본 형태.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+        "502":
+          description: Claude Code 호출 실패 (에러 결과, 텍스트 없음 등)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: { code: "claude_error", message: "Claude Code returned an error: ..." }
+        "504":
+          description: Claude Code 응답 타임아웃
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                detail: { code: "claude_timeout", message: "Claude did not respond within 120s" }
+
+  /api/health:
+    get:
+      operationId: health
+      summary: 헬스 체크 (프론트는 사용하지 않음, 선택)
+      responses:
+        "200":
+          description: 서버 동작 중
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                additionalProperties: true
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required: [question]
+      additionalProperties: false
+      properties:
+        question:
+          type: string
+          minLength: 1
+          maxLength: 8000
+          description: 사용자 질문. 앞뒤 공백은 제거된다.
+
+    ChatResponse:
+      type: object
+      required: [answer, scores, evaluation_error]
+      properties:
+        answer:
+          type: string
+          description: Claude의 답변 텍스트 (plain text, 줄바꿈 유지)
+        scores:
+          oneOf:
+            - $ref: "#/components/schemas/Scores"
+            - type: "null"
+          description: Jev 채점 결과. 채점 실패 시 null.
+        evaluation_error:
+          type: [string, "null"]
+          description: 채점 실패 원인. 성공 시 null. `scores`가 null이면 반드시 채워진다.
+
+    Scores:
+      type: object
+      required: [relevance, conciseness, readability]
+      additionalProperties: false
+      properties:
+        relevance:
+          $ref: "#/components/schemas/AxisScore"
+        conciseness:
+          $ref: "#/components/schemas/AxisScore"
+        readability:
+          $ref: "#/components/schemas/AxisScore"
+
+    AxisScore:
+      type: object
+      required: [label, score, confidence, scale_max, legend]
+      properties:
+        label:
+          type: string
+          description: UI 표시용 한국어 라벨 (관련성 / 간결성 / 가독성)
+          examples: ["관련성"]
+        score:
+          type: number
+          minimum: 1
+          description: |
+            1 ~ scale_max 범위의 점수. Jev `ScoreAnswer.score`는 criteria 인덱스(0 시작)의
+            확률 가중 기댓값이므로 소수일 수 있으며, 표시용으로 +1 해서 1..5 로 맞춘다.
+          examples: [4.6]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Jev `ScoreAnswer.confidence` 그대로 (0 ~ 1)
+        scale_max:
+          type: integer
+          minimum: 1
+          description: 점수 최대값. 현재 루브릭은 5단계이므로 5.
+          examples: [5]
+        legend:
+          type: object
+          description: |
+            점수 → 기준 설명. 키는 표시 점수 문자열("1".."5"). 비어 있어도 된다.
+            프론트는 hover 툴팁에만 사용한다.
+          additionalProperties:
+            type: string
+          examples:
+            - { "1": "Off-topic or does not address the question", "5": "Directly and completely answers" }
+
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: 기계 판독용 코드
+              enum: [claude_error, claude_timeout]
+            message:
+              type: string
+              description: 사용자에게 그대로 보여줄 수 있는 메시지
+
+    ValidationError:
+      description: FastAPI `HTTPValidationError` 기본 형태. 프론트는 `detail[0].msg`만 표시한다.
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [loc, msg, type]
+            properties:
+              loc:
+                type: array
+                items:
+                  type: [string, integer]
+              msg:
+                type: string
+              type:
+                type: string
