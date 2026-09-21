@@ -6,7 +6,7 @@ class Score(BaseModel):
     score: float
     confidence: float
     scale_max: int
-    legend: dict[str, str]
+    legend: dict[int, str]
 
 
 class Scores(BaseModel):
