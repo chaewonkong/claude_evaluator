@@ -50,6 +50,17 @@ EVAL_QUESTIONS = {
 }
 
 
+def get_probability(legend: dict[int, str], prob: dict[int, float]) -> dict[str, float]:
+    result: dict[str, float] = {}
+
+    for offset, probability in prob.items():
+        target_legend = legend.get(offset, None)
+        if target_legend:
+            result[target_legend] = probability
+
+    return result
+
+
 def normalized(answer: ScoreAnswer, question_id: str) -> float:
     """Put a score on 0 to 1 by dividing by its top level number."""
     top_level = len(EVAL_QUESTIONS[question_id].criteria) - 1
@@ -64,12 +75,14 @@ async def get_score(question: str, result: QueryResult) -> Scores:
         )
     scores: dict[str, ScoreResult] = {}
     for key, answer in response.scores.items():
+        legend = {k: str(v) for k, v in answer.legend.items()}
         scores[key] = ScoreResult(
             label=key,
             score=normalized(answer, question_id=key),
             confidence=answer.confidence,
-            legend={k: str(v) for k, v in answer.legend.items()},
+            legend=legend,
             scale_max=1,
+            probabilities=get_probability(legend, answer.probabilities),
         )
 
     return Scores(

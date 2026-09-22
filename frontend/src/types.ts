@@ -4,6 +4,7 @@ export type AxisScore = {
   confidence: number
   scale_max: number
   legend: Record<string, string>
+  probabilities?: Record<string, number>
 }
 
 export type Scores = {

@@ -7,6 +7,7 @@ class Score(BaseModel):
     confidence: float
     scale_max: int
     legend: dict[int, str]
+    probabilities: dict[str, float]
 
 
 class Scores(BaseModel):
