@@ -4,22 +4,9 @@ const AXES: (keyof Scores)[] = ['relevance', 'conciseness', 'readability']
 
 function tone(score: number, max: number) {
   const ratio = score / max
-  if (ratio >= 0.8) {
-    return {
-      chip: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200',
-      bar: 'bg-green-500',
-    }
-  }
-  if (ratio >= 0.6) {
-    return {
-      chip: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
-      bar: 'bg-amber-500',
-    }
-  }
-  return {
-    chip: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
-    bar: 'bg-red-500',
-  }
+  if (ratio >= 0.8) return { text: 'text-green-800 dark:text-green-200', bar: 'bg-green-500' }
+  if (ratio >= 0.6) return { text: 'text-amber-800 dark:text-amber-200', bar: 'bg-amber-500' }
+  return { text: 'text-red-800 dark:text-red-200', bar: 'bg-red-500' }
 }
 
 function tooltip(axis: AxisScore) {
@@ -32,21 +19,19 @@ function tooltip(axis: AxisScore) {
   return lines.join('\n')
 }
 
-function Badge({ axis }: { axis: AxisScore }) {
+function ScoreRow({ axis }: { axis: AxisScore }) {
   const t = tone(axis.score, axis.scale_max)
   const pct = Math.max(0, Math.min(100, (axis.score / axis.scale_max) * 100))
   return (
-    <div className="flex flex-col gap-1" title={tooltip(axis)}>
-      <span
-        className={`inline-flex items-baseline gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${t.chip}`}
-      >
-        <span>{axis.label}</span>
-        <span className="tabular-nums">
+    <div className="flex min-w-0 flex-col gap-1.5" title={tooltip(axis)}>
+      <div className="flex items-baseline justify-between gap-2.5 text-sm whitespace-nowrap">
+        <span className="font-medium text-neutral-500 capitalize dark:text-neutral-400">{axis.label}</span>
+        <span className={`tabular-nums ${t.text}`}>
           {axis.score.toFixed(1)}
-          <span className="opacity-60"> / {axis.scale_max}</span>
+          <span className="text-neutral-400 dark:text-neutral-500"> / {axis.scale_max}</span>
         </span>
-      </span>
-      <div className="h-1 w-full overflow-hidden rounded bg-neutral-200 dark:bg-neutral-700">
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded bg-neutral-200 dark:bg-neutral-700">
         <div className={`h-full rounded ${t.bar}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -54,13 +39,24 @@ function Badge({ axis }: { axis: AxisScore }) {
 }
 
 export default function ScoreBadges({ scores }: { scores: Scores }) {
+  const avg = AXES.reduce((sum, key) => sum + scores[key].score / scores[key].scale_max, 0) / AXES.length
+
   return (
-    <div className="mt-3 flex flex-wrap gap-3">
-      {AXES.map((key) => (
-        <div key={key} className="w-28">
-          <Badge axis={scores[key]} />
-        </div>
-      ))}
-    </div>
+    <aside
+      aria-label="답변 품질 점수"
+      className="flex flex-col gap-3 rounded-[10px] border border-neutral-200 bg-neutral-50 px-4 py-3.5 md:sticky md:top-3 dark:border-neutral-800 dark:bg-neutral-800/40"
+    >
+      <div className="flex flex-col gap-2 border-b border-neutral-200 pb-3 dark:border-neutral-800">
+        <span className="text-[15px] font-semibold">Answer Quality</span>
+        <span className="text-[13px] font-medium text-neutral-500 tabular-nums dark:text-neutral-400">
+          Avg. {Math.round(avg * 100)}%
+        </span>
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-x-5 gap-y-3 md:grid-cols-1">
+        {AXES.map((key) => (
+          <ScoreRow key={key} axis={scores[key]} />
+        ))}
+      </div>
+    </aside>
   )
 }

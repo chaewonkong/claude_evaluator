@@ -1,6 +1,41 @@
 import { useEffect, useRef } from 'react'
 import type { Message } from '../types'
 import MessageBubble from './MessageBubble'
+import ScoreBadges from './ScoreBadges'
+
+type Turn = { key: string; user?: Message; assistant?: Message }
+
+function groupTurns(messages: Message[]): Turn[] {
+  const turns: Turn[] = []
+  for (const m of messages) {
+    const last = turns[turns.length - 1]
+    if (m.role === 'assistant' && last && last.user && !last.assistant) {
+      last.assistant = m
+    } else if (m.role === 'user') {
+      turns.push({ key: m.id, user: m })
+    } else {
+      turns.push({ key: m.id, assistant: m })
+    }
+  }
+  return turns
+}
+
+function TurnRow({ turn }: { turn: Turn }) {
+  const scores = turn.assistant?.status === 'done' ? turn.assistant.scores : null
+  return (
+    <div className="grid gap-y-7 md:col-span-2 md:grid-cols-subgrid md:gap-y-0">
+      <div className="flex min-w-0 flex-col gap-7 md:col-start-1 md:gap-6">
+        {turn.user && <MessageBubble message={turn.user} />}
+        {turn.assistant && <MessageBubble message={turn.assistant} />}
+      </div>
+      {scores && (
+        <div className="md:col-start-2">
+          <ScoreBadges scores={scores} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function MessageList({ messages }: { messages: Message[] }) {
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -15,7 +50,7 @@ export default function MessageList({ messages }: { messages: Message[] }) {
         <div className="text-center">
           <h1 className="text-2xl font-semibold">Claude Evaluator</h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            질문을 입력하면 Claude의 답변과 Jev 평가 점수를 보여줍니다.
+            질문을 입력하면 Claude의 답변과 답변 품질 점수를 보여줍니다.
           </p>
         </div>
       </div>
@@ -24,11 +59,11 @@ export default function MessageList({ messages }: { messages: Message[] }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
-        {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
+      <div className="mx-auto grid w-full max-w-4xl gap-y-7 px-4 py-6 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-15 md:gap-y-6">
+        {groupTurns(messages).map((t) => (
+          <TurnRow key={t.key} turn={t} />
         ))}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="md:col-span-2" />
       </div>
     </div>
   )

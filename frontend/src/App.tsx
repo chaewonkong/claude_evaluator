@@ -39,7 +39,7 @@ export default function App() {
   return (
     <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
       <header className="border-b border-neutral-200 dark:border-neutral-800">
-        <div className="mx-auto w-full max-w-3xl px-4 py-3 text-sm font-semibold">Claude Evaluator</div>
+        <div className="mx-auto w-full max-w-4xl px-4 py-3 text-sm font-semibold">Claude Evaluator</div>
       </header>
       <MessageList messages={messages} />
       <ChatInput busy={busy} onSend={handleSend} />

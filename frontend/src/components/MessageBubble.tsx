@@ -1,5 +1,5 @@
 import type { Message } from '../types'
-import ScoreBadges from './ScoreBadges'
+import Markdown from './Markdown'
 
 function PendingDots() {
   return (
@@ -18,8 +18,8 @@ function PendingDots() {
 export default function MessageBubble({ message }: { message: Message }) {
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl bg-neutral-200 px-4 py-2 leading-relaxed dark:bg-neutral-700">
+      <div className="flex justify-start">
+        <div className="max-w-[80%] rounded-2xl bg-neutral-200 px-4 py-2 leading-relaxed whitespace-pre-wrap dark:bg-neutral-700">
           {message.content}
         </div>
       </div>
@@ -27,29 +27,20 @@ export default function MessageBubble({ message }: { message: Message }) {
   }
 
   return (
-    <div className="flex justify-start">
-      <div className="w-full max-w-full">
-        {message.status === 'pending' && <PendingDots />}
-        {message.status === 'error' && (
-          <p className="whitespace-pre-wrap leading-relaxed text-red-600 dark:text-red-400">
-            {message.content}
-          </p>
-        )}
-        {message.status === 'done' && (
-          <>
-            <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
-            {message.scores && <ScoreBadges scores={message.scores} />}
-            {!message.scores && message.evaluationError && (
-              <span
-                className="mt-3 inline-flex rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300"
-                title={message.evaluationError}
-              >
-                평가 불가
-              </span>
-            )}
-          </>
-        )}
-      </div>
+    <div className="min-w-0">
+      {message.status === 'pending' && <PendingDots />}
+      {message.status === 'error' && (
+        <p className="leading-relaxed whitespace-pre-wrap text-red-600 dark:text-red-400">{message.content}</p>
+      )}
+      {message.status === 'done' && <Markdown content={message.content} />}
+      {message.status === 'done' && !message.scores && message.evaluationError && (
+        <span
+          className="mt-3 inline-flex rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300"
+          title={message.evaluationError}
+        >
+          평가 불가
+        </span>
+      )}
     </div>
   )
 }

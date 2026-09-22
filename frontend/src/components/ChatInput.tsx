@@ -45,7 +45,7 @@ export default function ChatInput({ busy, onSend }: Props) {
 
   return (
     <div className="sticky bottom-0 border-t border-neutral-200 bg-white/80 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/80">
-      <form onSubmit={handleSubmit} className="mx-auto w-full max-w-3xl px-4 py-3">
+      <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl px-4 py-3">
         <div className="flex items-end gap-2 rounded-2xl border border-neutral-300 bg-white px-3 py-2 shadow-sm focus-within:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:focus-within:border-neutral-400">
           <textarea
             ref={ref}
