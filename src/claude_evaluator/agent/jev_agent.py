@@ -1,6 +1,5 @@
 from typesafe_sdk import AsyncTypeSafeClient, Score, ScoreAnswer
 from claude_evaluator.model.response import Scores, Score as ScoreResult
-from claude_evaluator.model.query_result import QueryResult
 
 EVAL_QUESTIONS = {
     "relevance": Score(
@@ -67,10 +66,10 @@ def normalized(answer: ScoreAnswer, question_id: str) -> float:
     return answer.score / top_level
 
 
-async def get_score(question: str, result: QueryResult) -> Scores:
+async def get_score(question: str, result: str) -> Scores:
     async with AsyncTypeSafeClient() as client:
         response = await client.system_one(
-            state={"question": question, "answer": result.result},
+            state={"question": question, "answer": result},
             questions=EVAL_QUESTIONS,
         )
     scores: dict[str, ScoreResult] = {}

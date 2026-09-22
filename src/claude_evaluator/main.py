@@ -18,4 +18,4 @@ async def chat(chat: ChatRequest) -> ChatResponse:
     result = await query_agent(chat.question)
     scores = await get_score(chat.question, result=result)
 
-    return ChatResponse(answer=result.result, scores=scores, evaluation_error=None)
+    return ChatResponse(answer=result, scores=scores, evaluation_error=None)
