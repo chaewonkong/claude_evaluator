@@ -36,7 +36,7 @@ export default function ChatInput({ busy, onSend }: Props) {
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    // 한국어 IME 조합 중 Enter는 무시 (조합 확정용)
+    // Ignore Enter while an IME composition is in progress (it commits the composition)
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       submit()
@@ -52,7 +52,7 @@ export default function ChatInput({ busy, onSend }: Props) {
             rows={1}
             value={text}
             disabled={busy}
-            placeholder="질문을 입력하세요… (Enter 전송, Shift+Enter 줄바꿈)"
+            placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)"
             onChange={(e) => {
               setText(e.target.value)
               resize()
@@ -65,7 +65,7 @@ export default function ChatInput({ busy, onSend }: Props) {
             disabled={!canSend}
             className="rounded-xl bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
           >
-            전송
+            Send
           </button>
         </div>
       </form>

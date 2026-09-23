@@ -28,7 +28,7 @@ export default function App() {
     } catch (err) {
       resolved = {
         status: 'error',
-        content: err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
+        content: err instanceof Error ? err.message : 'An unknown error occurred.',
       }
     }
 

@@ -31,7 +31,7 @@ function Pre({ node, children, ...rest }: ComponentProps<'pre'> & ExtraProps) {
       <div className="codeblock-top">
         <span>{languageOf(node)}</span>
         <button type="button" onClick={copy}>
-          {copied ? '복사됨' : '복사'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
       <pre ref={ref} {...rest}>

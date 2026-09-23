@@ -87,7 +87,7 @@ export default function ScoreBadges({ scores }: { scores: Scores }) {
 
   return (
     <aside
-      aria-label="답변 품질 점수"
+      aria-label="Answer quality scores"
       className="flex flex-col gap-3 rounded-[10px] border border-neutral-200 bg-neutral-50 px-4 py-3.5 md:sticky md:top-3 dark:border-neutral-800 dark:bg-neutral-800/40"
     >
       <div className="flex flex-col gap-2 border-b border-neutral-200 pb-3 dark:border-neutral-800">

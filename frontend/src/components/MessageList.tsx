@@ -38,11 +38,15 @@ function TurnRow({ turn }: { turn: Turn }) {
 }
 
 export default function MessageList({ messages }: { messages: Message[] }) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const lastUserId = messages.findLast((m) => m.role === 'user')?.id
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (!lastUserId) return
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-message-id="${lastUserId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [lastUserId])
 
   if (messages.length === 0) {
     return (
@@ -50,7 +54,7 @@ export default function MessageList({ messages }: { messages: Message[] }) {
         <div className="text-center">
           <h1 className="text-2xl font-semibold">Claude Evaluator</h1>
           <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            질문을 입력하면 Claude의 답변과 답변 품질 점수를 보여줍니다.
+            Ask a question to see Claude's answer along with its quality scores.
           </p>
         </div>
       </div>
@@ -58,12 +62,11 @@ export default function MessageList({ messages }: { messages: Message[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={listRef} className="flex-1 overflow-y-auto">
       <div className="mx-auto grid w-full max-w-4xl gap-y-7 px-4 py-6 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-15 md:gap-y-6">
         {groupTurns(messages).map((t) => (
           <TurnRow key={t.key} turn={t} />
         ))}
-        <div ref={bottomRef} className="md:col-span-2" />
       </div>
     </div>
   )

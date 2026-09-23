@@ -1,6 +1,6 @@
 import type { ChatResponse } from './types'
 
-/** FastAPI의 `detail` 필드는 객체 / 문자열 / 배열(pydantic 422) 어느 형태든 올 수 있다. */
+/** FastAPI's `detail` field can be an object, a string, or an array (pydantic 422). */
 function extractDetail(body: unknown, status: number): string {
   const fallback = `HTTP ${status}`
   if (!body || typeof body !== 'object') return fallback
@@ -26,7 +26,7 @@ export async function sendChat(question: string): Promise<ChatResponse> {
       body: JSON.stringify({ question }),
     })
   } catch {
-    throw new Error('서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인해 주세요.')
+    throw new Error('Could not connect to the server. Make sure the backend is running.')
   }
 
   if (!res.ok) {
@@ -34,7 +34,7 @@ export async function sendChat(question: string): Promise<ChatResponse> {
     try {
       body = await res.json()
     } catch {
-      /* 본문이 JSON이 아니면 상태 코드만 사용 */
+      /* Fall back to the status code if the body is not JSON */
     }
     throw new Error(extractDetail(body, res.status))
   }
