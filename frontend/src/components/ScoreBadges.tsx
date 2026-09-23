@@ -1,6 +1,5 @@
 import type { AxisScore, Scores } from '../types'
 
-const AXES: (keyof Scores)[] = ['relevance', 'conciseness', 'readability']
 const WEAK_THRESHOLD = 0.5
 
 function tone(score: number, max: number) {
@@ -83,7 +82,9 @@ function ScoreRow({ axis }: { axis: AxisScore }) {
 }
 
 export default function ScoreBadges({ scores }: { scores: Scores }) {
-  const avg = AXES.reduce((sum, key) => sum + scores[key].score / scores[key].scale_max, 0) / AXES.length
+  const axes = Object.entries(scores)
+  if (axes.length === 0) return null
+  const avg = axes.reduce((sum, [, axis]) => sum + axis.score / axis.scale_max, 0) / axes.length
 
   return (
     <aside
@@ -97,8 +98,8 @@ export default function ScoreBadges({ scores }: { scores: Scores }) {
         </span>
       </div>
       <div className="grid grid-cols-1 gap-y-5">
-        {AXES.map((key) => (
-          <ScoreRow key={key} axis={scores[key]} />
+        {axes.map(([key, axis]) => (
+          <ScoreRow key={key} axis={axis} />
         ))}
       </div>
     </aside>

@@ -7,11 +7,7 @@ export type AxisScore = {
   probabilities?: Record<string, number>
 }
 
-export type Scores = {
-  relevance: AxisScore
-  conciseness: AxisScore
-  readability: AxisScore
-}
+export type Scores = Record<string, AxisScore>
 
 export type ChatResponse = {
   answer: string
