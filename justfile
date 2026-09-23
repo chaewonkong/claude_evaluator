@@ -5,9 +5,10 @@ default:
 
 dev:
     #!/usr/bin/env bash
-    trap 'kill 0' INT TERM
-    (cd frontend && npm run dev) &
-    uv run fastapi dev &
+    set -m
+    (cd frontend && npm run dev) & FE=$!
+    uv run fastapi dev & BE=$!
+    trap 'trap - INT TERM; kill -- -$FE -$BE 2>/dev/null; wait' INT TERM
     wait
 
 fe:
