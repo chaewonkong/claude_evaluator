@@ -22,3 +22,6 @@ build-backend = "uv_build"
 
 [tool.fastapi]
 entrypoint = "claude_evaluator.main:app"
+
+[tool.ruff.lint]
+extend-select = ["I"]

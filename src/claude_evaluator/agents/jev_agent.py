@@ -1,5 +1,7 @@
 from typesafe_sdk import AsyncTypeSafeClient, Score, ScoreAnswer
-from claude_evaluator.model.response import Scores, Score as ScoreResult
+
+from claude_evaluator.model.response import Score as ScoreResult
+from claude_evaluator.model.response import Scores
 
 EVAL_QUESTIONS = {
     "relevance": Score(
@@ -60,9 +62,6 @@ EVAL_QUESTIONS = {
             "Heavy; deep reasoning, long structured output, or complex code",
         ],
     ),
-}
-
-LATENCY_QUESTION = {
     "latency": Score(
         instructions=(
             "`latency_ms` is how long generating `answer` took. "
@@ -79,58 +78,76 @@ LATENCY_QUESTION = {
         ],
     ),
 }
+
+EFFORT_QUESTION = {
+    "expected_effort": Score(
+        instructions=(
+            "Estimate how much generation effort `answer` legitimately requires, "
+            "given the difficulty of `question` and the length and depth of `answer`. "
+            "Consider reasoning depth, amount of domain knowledge, and output length. "
+            "Do not judge quality; judge only how much work a correct answer needs."
+        ),
+        criteria=[
+            "Trivial; a one-line factual or conversational reply",
+            "Simple; a short explanation with no real reasoning",
+            "Moderate; multi-step explanation, some reasoning or code",
+            "Heavy; deep reasoning, long structured output, or complex code",
+        ],
+    ),
+}
+
 LATENCY_BUDGET_MS = {0: 2_000, 1: 5_000, 2: 12_000, 3: 30_000}
 
 
 class JevAgent:
     async def evaluate(self, prompt: str, result: str, latency_ms: int) -> Scores:
         async with AsyncTypeSafeClient() as client:
-            firesResponse = await client.system_one(
+            effortResponse = await client.system_one(
                 state={"question": prompt, "answer": result},
-                questions=EVAL_QUESTIONS,
+                questions=EFFORT_QUESTION,
             )
-            scores: dict[str, ScoreResult] = {}
-            for key, answer in firesResponse.scores.items():
-                legend = {k: str(v) for k, v in answer.legend.items()}
-                scores[key] = ScoreResult(
-                    label=key,
-                    score=self._normalized(EVAL_QUESTIONS, answer, question_id=key),
-                    confidence=answer.confidence,
-                    legend=legend,
-                    scale_max=1,
-                    probabilities=self._get_probability(legend, answer.probabilities),
-                )
+            effort = effortResponse.scores.get("expected_effort")
+            level = round(effort.score) if effort else 0
+            legend = effort.legend[level] if effort else 0
 
-            effort = scores["expected_effort"]
-            level = int(round(effort.score))
-            secondResponse = await client.system_one(
+            response = await client.system_one(
                 state={
                     "question": prompt,
                     "answer": result,
-                    "expected_effort": effort.legend[level],
+                    "expected_effort": legend,
                     "budget_ms": LATENCY_BUDGET_MS[level],
                     "latency_ms": latency_ms,
                 },
-                questions=LATENCY_QUESTION,
+                questions=EVAL_QUESTIONS,
             )
-            for key, answer in secondResponse.scores.items():
-                legend = {k: str(v) for k, v in answer.legend.items()}
-                scores[key] = ScoreResult(
-                    label=key,
-                    score=self._normalized(LATENCY_QUESTION, answer, question_id=key),
-                    confidence=answer.confidence,
-                    legend=legend,
-                    scale_max=1,
-                    probabilities=self._get_probability(legend, answer.probabilities),
-                )
 
             return Scores(
-                readability=scores["readability"],
-                relevance=scores["relevance"],
-                conciseness=scores["conciseness"],
-                latency=scores["latency"],
-                expected_effort=scores["expected_effort"],
+                readability=self._get_score_result(response.scores, "readability"),
+                relevance=self._get_score_result(response.scores, "relevance"),
+                conciseness=self._get_score_result(response.scores, "conciseness"),
+                latency=self._get_score_result(response.scores, "latency"),
+                expected_effort=self._get_score_result(
+                    response.scores, "expected_effort"
+                ),
             )
+
+    def _get_score_result(
+        self, scores: dict[str, ScoreAnswer], key: str
+    ) -> ScoreResult:
+        score = scores.get(key)
+        if not score:
+            raise RuntimeError(f"score does not have key: {key}")
+
+        legend = {k: str(v) for k, v in score.legend.items()}
+
+        return ScoreResult(
+            label=key,
+            score=self._normalized(EVAL_QUESTIONS, score, question_id=key),
+            confidence=score.confidence,
+            legend=legend,
+            scale_max=1,
+            probabilities=self._get_probability(legend, score.probabilities),
+        )
 
     def _get_probability(
         self, legend: dict[int, str], prob: dict[int, float]

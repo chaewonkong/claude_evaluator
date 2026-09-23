@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from claude_evaluator.model.request import ChatRequest
-from claude_evaluator.model.response import ChatResponse
+
 from claude_evaluator.agents.claude_agent import ClaudeAgent
 from claude_evaluator.agents.jev_agent import JevAgent
+from claude_evaluator.model.request import ChatRequest
+from claude_evaluator.model.response import ChatResponse
 
 
 def router(claude_agent: ClaudeAgent, jev_agent: JevAgent) -> APIRouter:
