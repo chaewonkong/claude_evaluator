@@ -4,12 +4,8 @@ default:
     @just --list
 
 dev:
-    #!/usr/bin/env bash
-    set -m
-    (cd frontend && npm run dev) & FE=$!
-    uv run fastapi dev & BE=$!
-    trap 'trap - INT TERM; kill -- -$FE -$BE 2>/dev/null; wait' INT TERM
-    wait
+    cd frontend && npm run build
+    uv run fastapi run
 
 fe:
     cd frontend && npm run dev

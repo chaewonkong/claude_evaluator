@@ -8,9 +8,11 @@ A Web UI based Claude chat with evaluated answer with Jev.
 
 ## Run
 
-The following command will run both frontend, backend app. You can check out and use it in the browser: localhost:5173
+The following command will build frontend, then run backend app. You can check out and use it in the browser: localhost:8000
 ```shell
 $ just dev
 ```
+
+You can also use docker compose for running.
 
 
