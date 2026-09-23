@@ -129,6 +129,7 @@ class JevAgent:
                 relevance=scores["relevance"],
                 conciseness=scores["conciseness"],
                 latency=scores["latency"],
+                expected_effort=scores["expected_effort"],
             )
 
     def _get_probability(
