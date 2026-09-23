@@ -14,6 +14,7 @@ class Scores(BaseModel):
     relevance: Score
     conciseness: Score
     readability: Score
+    latency: Score
 
 
 class ChatResponse(BaseModel):
